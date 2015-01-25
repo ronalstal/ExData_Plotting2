@@ -1,65 +1,8 @@
-# ExData Course Project 2
-Ronald Stalder  
-`r Sys.Date()`  
-
-## get and read the data
-
-The data for this assignment are available from the course web site as a single zip file:
-
-- [Data for Peer Assessment](https://d396qusza40orc.cloudfront.net/exdata%2Fdata%2FNEI_data.zip) [29Mb]  
-
-The zip file contains two files:
-
-PM2.5 Emissions Data (`summarySCC_PM25.rds`): This file contains a data frame with all of the PM2.5 emissions data for 1999, 2002, 2005, and 2008. For each year, the table contains number of tons of PM2.5 emitted from a specific type of source for the entire year. Here are the first few rows.
-
-```
-##     fips      SCC Pollutant Emissions  type year
-## 4  09001 10100401  PM25-PRI    15.714 POINT 1999
-## 8  09001 10100404  PM25-PRI   234.178 POINT 1999
-## 12 09001 10100501  PM25-PRI     0.128 POINT 1999
-## 16 09001 10200401  PM25-PRI     2.036 POINT 1999
-## 20 09001 10200504  PM25-PRI     0.388 POINT 1999
-## 24 09001 10200602  PM25-PRI     1.490 POINT 1999
-```
-
-- `fips`: A five-digit number (represented as a string) indicating the U.S. county
-
-- `SCC`: The name of the source as indicated by a digit string (see source code classification table)
-
-- `Pollutant`: A string indicating the pollutant
-
-- `Emissions`: Amount of PM2.5 emitted, in tons
-
-- `type`: The type of source (point, non-point, on-road, or non-road)
-
-- `year`: The year of emissions recorded
 
 
-Source Classification Code Table (`Source_Classification_Code.rds`): This table provides a mapping 
-from the SCC digit strings in the Emissions table to the actual name of the PM2.5 source. 
-The sources are categorized in a few different ways from more general to more specific and you 
-may choose to explore whatever categories you think are most useful. For example, source “10100101” is known as “Ext Comb /Electric Gen /Anthracite Coal /Pulverized Coal”.
 
+## ----readData, results='hold', purl=TRUE, cache=FALSE--------------------
 
-```r
-zipFile <- "../data/NEI_data.zip"
-url <- "https://d396qusza40orc.cloudfront.net/exdata%2Fdata%2FNEI_data.zip"
-
-if (!file.exists(zipFile)) {
-  download.file(url, zipFile, method="curl", mode="wb")
-  unzip(zipFile, setTimes=TRUE)
-}
-
-print(paste("the zip file", zipFile, 
-            "was downloaded/extracted on:", file.info(zipFile)$mtime))
-```
-
-```
-## [1] "the zip file ../data/NEI_data.zip was downloaded/extracted on: 2015-01-08 08:11:12"
-```
-
-
-```r
 library(data.table, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE)
 library(ggplot2, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE)
 library(gridExtra, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE)
@@ -85,14 +28,9 @@ TrendTable <- function(dt, byCol, margin=FALSE, eps=0.005) {
     }
     return(tt)
 }
-```
-
-## plot1: Tendency in total US emissions  
-
-1. Have total emissions from PM2.5 decreased in the United States from 1999 to 2008? Using the **base** plotting system, make a plot showing the *total* PM2.5 emission from all sources for each of the years 1999, 2002, 2005, and 2008.
 
 
-```r
+## ----plot1, results='hide', purl=TRUE, fig.width=6, fig.height=4---------
 # Have total emissions from PM2.5 decreased in the United States from 1999 to 2008?
 
 # total emissions for all USA by year
@@ -106,24 +44,15 @@ barplot(SUM$totEm, col = "red", names.arg = SUM$year,
 abline(lsfit(1:length(SUM$year)-1, SUM$totEm), lwd = 2, col = "blue")
 legend("topright",paste("tendency:", trend), 
        lty = "solid", lwd = 2, col = "blue", bty = "n", inset = c(0.01, -0.05))
-```
 
-![](ExData_Plotting2_files/figure-html/plot1-1.png) 
-
-```r
 # copy the screen plot to png file
 noprint <- dev.copy(png, file = "../plot1.png",
                          width = 720, height = 480, units = "px")
 noprint <- dev.off() ## Don't forget to close the PNG device!
-```
-
-## plot2: Tendency for total emissions in Baltimore/MD  
-
-2. Have total emissions from PM2.5 decreased in the **Baltimore City, Maryland** (`fips == "24510"`) from 1999 to 2008? Use the **base** plotting system to make a plot answering this question.
 
 
 
-```r
+## ----plot2, results='hide', purl=TRUE, fig.width=6, fig.height=4---------
 # Have total emissions from PM2.5 decreased in the **Baltimore City, Maryland** 
 # (`fips == "24510"`) from 1999 to 2008?
 
@@ -138,24 +67,15 @@ barplot(SUM$totEm, col = "red", names.arg = SUM$year, ylim = c(0, 4000),
 abline(lsfit(1:length(SUM$year)-1, SUM$totEm), lwd = 2, col = "blue")
 legend("topright",paste("tendency:", trend), 
        lty = "solid", lwd = 2, col = "blue", bty = "n", inset = c(0.01, -0.05), cex = 1.0)
-```
 
-![](ExData_Plotting2_files/figure-html/plot2-1.png) 
-
-```r
 # copy the screen plot to png file
 noprint <- dev.copy(png, file = "../plot2.png",
                          width = 720, height = 480, units = "px")
 noprint <- dev.off() ## Don't forget to close the PNG device!
-```
-
-## plot3: Tendency for total emissions in Baltimore/MD  
-
-3. Of the four types of sources indicated by the `type` (point, nonpoint, onroad, nonroad) variable, which of these four sources have seen decreases in emissions from 1999–2008 for **Baltimore City**? Which have seen increases in emissions from 1999–2008? Use the **ggplot2** plotting system to make a plot answer this question.
 
 
 
-```r
+## ----plot3, results='hide', purl=TRUE, fig.width=6, fig.height=4---------
 # Of the 4 **type** of sources which increase/decrease
 # for **Baltimore City, Maryland** (`fips == "24510"`) from 1999 to 2008?
 
@@ -182,24 +102,15 @@ gp3 <- ggplot(BALT, aes(year,Emissions)) +
        theme(strip.text.x = element_text(size=14, face="bold", colour="#5050AA"),
              plot.title = element_text(lineheight=.9, face="bold", size=16))
 print(gp3)
-```
 
-![](ExData_Plotting2_files/figure-html/plot3-1.png) 
-
-```r
 # copy the screen plot to png file
 noprint <- dev.copy(png, file = "../plot3.png",
                          width = 720, height = 480, units = "px")
 noprint <- dev.off() ## Don't forget to close the PNG device!
-```
-
-## plot4: Tendency for coal combustion-related emissions all USA  
-
-4. Across the United States, how have emissions from coal combustion-related sources changed from 1999–2008?
 
 
 
-```r
+## ----plot4, results='hide', purl=TRUE, fig.width=6, fig.height=8---------
 # How have emissions from coal combustion-related sources changed 
 # in the USA from 1999 to 2008?
 
@@ -281,24 +192,16 @@ grid.newpage()
 pushViewport(viewport(layout = grid.layout(2, 1)))
 print(gp4a, vp = viewport(layout.pos.row = 1, layout.pos.col = 1))
 print(gp4b, vp = viewport(layout.pos.row = 2, layout.pos.col = 1))
-```
 
-![](ExData_Plotting2_files/figure-html/plot4-1.png) 
-
-```r
 # copy the screen plot to png file
 noprint <- dev.copy(png, file = "../plot4.png",
                          width = 720, height = 960, units = "px")
 noprint <- dev.off() ## Don't forget to close the PNG device!
-```
-
-## plots 5 and 6: select Motor Vehicle SCCs
-
-A function to select SCCs for "motor vehicle emissions"
 
 
 
-```r
+## ----selMotVehic, results='hide', purl=TRUE------------------------------
+
 # A function to select SCCs for "motor vehicle emissions" used in questions 5 and 6
 
 # MOTOR VEHICLE SOURCES:
@@ -317,15 +220,10 @@ selMotorVehic <- function(SCC) {
        ][grep("Diesel", SCC.Level.Two), fuel:="Diesel"]             # .. or "Diesel"
 
 }
-```
-
-## plot5: Tendency for motor vehicle emissions in Baltimore/MD  
-
-5. How have emissions from motor vehicle sources changed from 1999–2008 in **Baltimore City**?
 
 
 
-```r
+## ----plot5, results='hide', purl=TRUE, fig.width=6, fig.height=4---------
 # How have emissions from motor vehicle sources changed
 # for **Baltimore City, Maryland** (`fips == "24510"`) from 1999 to 2008?
 
@@ -367,24 +265,15 @@ gp5 <- ggplot(BALT, aes(year,Emissions)) +
        theme(strip.text.x = element_text(size=14, face="bold", colour="#5050AA"),
              plot.title = element_text(lineheight=.9, face="bold", size=16))
 print(gp5)
-```
 
-![](ExData_Plotting2_files/figure-html/plot5-1.png) 
-
-```r
 # copy the screen plot to png file
 noprint <- dev.copy(png, file = "../plot5.png",
                          width = 720, height = 480, units = "px")
 noprint <- dev.off() ## Don't forget to close the PNG device!
-```
-
-## plot6: Compare Tendency for motor vehicle emissions of Baltimore/MD to Los Angeles/CA  
-
-6. Compare emissions from motor vehicle sources in Baltimore City with emissions from motor vehicle sources in **Los Angeles County, California** (`fips == "06037"`). Which city has seen greater changes over time in motor vehicle emissions?
 
 
 
-```r
+## ----plot6, results='hide', purl=TRUE, fig.width=9, fig.height=7---------
 # Which city has seen greater changes in motor vehicle emissions from 1999 to 2008?
 ## **Baltimore City, Maryland** (`fips == "24510"`)
 ## **Los Angeles County, California** (`fips == "06037"`)
@@ -523,13 +412,10 @@ grid.arrange(g6a, g6b, g6c, g6d, ncol=2,
                           "or Short.Name contains 'recreat'",
                           sep=" ")
              )
-```
 
-![](ExData_Plotting2_files/figure-html/plot6-1.png) 
-
-```r
 # copy the screen plot to png file
 noprint <- dev.copy(png, file = "../plot6.png",
                          width = 1020, height = 720, units = "px")
 noprint <- dev.off() ## Don't forget to close the PNG device!
-```
+
+

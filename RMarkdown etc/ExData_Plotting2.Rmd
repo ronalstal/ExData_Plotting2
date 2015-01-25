@@ -47,7 +47,7 @@ may choose to explore whatever categories you think are most useful. For example
 
 ```{r downloadData, results='hold', purl=FALSE, cache=FALSE}
 
-zipFile <- "NEI_data.zip"
+zipFile <- "../data/NEI_data.zip"
 url <- "https://d396qusza40orc.cloudfront.net/exdata%2Fdata%2FNEI_data.zip"
 
 if (!file.exists(zipFile)) {
@@ -64,13 +64,10 @@ print(paste("the zip file", zipFile,
 
 library(data.table, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE)
 library(ggplot2, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE)
-library(grid, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE)
+library(gridExtra, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE)
 
-dataFile <- "summarySCC_PM25.rds"
-codeFile <- "Source_Classification_Code.rds"
-
-NEI <- as.data.table(readRDS("summarySCC_PM25.rds"))
-SCC <- as.data.table(readRDS("Source_Classification_Code.rds"))
+NEI <- as.data.table(readRDS("../data/summarySCC_PM25.rds"))
+SCC <- as.data.table(readRDS("../data/Source_Classification_Code.rds"))
 
 # function to determine whether tendency increasing or decreasing
 getTrend <- function(years, emiss, eps=0.005) {
@@ -112,7 +109,7 @@ legend("topright",paste("tendency:", trend),
        lty = "solid", lwd = 2, col = "blue", bty = "n", inset = c(0.01, -0.05))
 
 # copy the screen plot to png file
-noprint <- dev.copy(png, file = "plot1.png",
+noprint <- dev.copy(png, file = "../plot1.png",
                          width = 720, height = 480, units = "px")
 noprint <- dev.off() ## Don't forget to close the PNG device!
 
@@ -140,7 +137,7 @@ legend("topright",paste("tendency:", trend),
        lty = "solid", lwd = 2, col = "blue", bty = "n", inset = c(0.01, -0.05), cex = 1.0)
 
 # copy the screen plot to png file
-noprint <- dev.copy(png, file = "plot2.png",
+noprint <- dev.copy(png, file = "../plot2.png",
                          width = 720, height = 480, units = "px")
 noprint <- dev.off() ## Don't forget to close the PNG device!
 
@@ -180,7 +177,7 @@ gp3 <- ggplot(BALT, aes(year,Emissions)) +
 print(gp3)
 
 # copy the screen plot to png file
-noprint <- dev.copy(png, file = "plot3.png",
+noprint <- dev.copy(png, file = "../plot3.png",
                          width = 720, height = 480, units = "px")
 noprint <- dev.off() ## Don't forget to close the PNG device!
 
@@ -275,9 +272,37 @@ print(gp4a, vp = viewport(layout.pos.row = 1, layout.pos.col = 1))
 print(gp4b, vp = viewport(layout.pos.row = 2, layout.pos.col = 1))
 
 # copy the screen plot to png file
-noprint <- dev.copy(png, file = "plot4.png",
+noprint <- dev.copy(png, file = "../plot4.png",
                          width = 720, height = 960, units = "px")
 noprint <- dev.off() ## Don't forget to close the PNG device!
+
+```
+
+## plots 5 and 6: select Motor Vehicle SCCs
+
+A function to select SCCs for "motor vehicle emissions"
+
+
+```{r selMotVehic, results='hide', purl=TRUE}
+
+# A function to select SCCs for "motor vehicle emissions" used in questions 5 and 6
+
+# MOTOR VEHICLE SOURCES:
+# ==> I chose to include all Onroad Categories plus Recreational Vehicles,
+#     but not airplanes, locomotives, machinery etc from  Mobile EI.Sectors
+# ==> from SCC select sources with "Data.Category" equal to "Onroad"
+#     and add SCCs with "recreat" in Short.Name (they all have "mobile" in EI.Sector)
+# ==> make fuel groups "Diesel", "Gasoline" by grepping SCC.Level.Two
+
+selMotorVehic <- function(SCC) {
+    
+  s <- SCC[Data.Category == "Onroad", ]                             # all Onroad catgories
+  s <- rbind(s, SCC[grep("recreat",Short.Name,ignore.case=TRUE), ]) # add recreational vehicles
+  s <- s[, list(SCC, SCC.Level.Two, Data.Category)                  # only these columns needed
+       ][, fuel:=as.factor("Gasoline")                              # group "Gasoline"
+       ][grep("Diesel", SCC.Level.Two), fuel:="Diesel"]             # .. or "Diesel"
+
+}
 
 ```
 
@@ -290,16 +315,8 @@ noprint <- dev.off() ## Don't forget to close the PNG device!
 # How have emissions from motor vehicle sources changed
 # for **Baltimore City, Maryland** (`fips == "24510"`) from 1999 to 2008?
 
-# MOTOR VEHICLE SOURCES:
-# ==> from SCC select sources with "SCC.Level.Two" containing "vehic"
-#     and "Data.Category" == "Onroad" (eliminates Equipments)
-# ==> make fuel groups "Diesel", "Gasoline" by grepping SCC.Level.Two
-
-SCCsel <- SCC[grep("vehic", SCC.Level.Two, ignore.case=TRUE, value=FALSE), # vehicles
-                list(SCC, SCC.Level.Two, Data.Category)                    # only columns needed
-            ][Data.Category == "Onroad",                                   # no equipments
-            ][, fuel:=as.factor("Gasoline")                                # group "Gasoline"
-            ][grep("Diesel", SCC.Level.Two), fuel:="Diesel"]               # .. or "Diesel"
+# call function to select SCCs for "motor vehicle emissions" used in questions 5 and 6
+SCCsel <- selMotorVehic(SCC)
 
 # ==> select these SCCs from NEI for Baltimore, merging in column Fuel
 #     (in SQL terms: INNER JOIN)
@@ -338,7 +355,7 @@ gp5 <- ggplot(BALT, aes(year,Emissions)) +
 print(gp5)
 
 # copy the screen plot to png file
-noprint <- dev.copy(png, file = "plot5.png",
+noprint <- dev.copy(png, file = "../plot5.png",
                          width = 720, height = 480, units = "px")
 noprint <- dev.off() ## Don't forget to close the PNG device!
 
@@ -349,7 +366,7 @@ noprint <- dev.off() ## Don't forget to close the PNG device!
 6. Compare emissions from motor vehicle sources in Baltimore City with emissions from motor vehicle sources in **Los Angeles County, California** (`fips == "06037"`). Which city has seen greater changes over time in motor vehicle emissions?
 
 
-```{r plot6, results='hide', purl=TRUE, fig.width=6, fig.height=4}
+```{r plot6, results='hide', purl=TRUE, fig.width=9, fig.height=7}
 # Which city has seen greater changes in motor vehicle emissions from 1999 to 2008?
 ## **Baltimore City, Maryland** (`fips == "24510"`)
 ## **Los Angeles County, California** (`fips == "06037"`)
@@ -376,18 +393,11 @@ AREA <- data.table(
         area = rep(c(92, 4060), 4)             # square miles Balt, L.A.
     )
 
-# MOTOR VEHICLE SOURCES:
-# ==> from SCC select sources with "SCC.Level.Two" containing "vehic"
-#     and "Data.Category" == "Onroad" (eliminates Equipments)
-# ==> make fuel groups "Diesel", "Gasoline" by grepping SCC.Level.Two
 
-SCCsel <- SCC[grep("vehic", SCC.Level.Two, ignore.case=TRUE, value=FALSE), # vehicles
-                list(SCC, SCC.Level.Two, Data.Category)                    # columns needed
-            ][Data.Category == "Onroad",                                   # no "equipments"
-            ][, fuel:=as.factor("Gasoline")                                # group "Gasoline"
-            ][grep("Diesel", SCC.Level.Two), fuel:="Diesel"]               # .. or "Diesel"
+# call function to select SCCs for "motor vehicle emissions" used in questions 5 and 6
+SCCsel <- selMotorVehic(SCC)
 
-# ==> select these SCCs from NEI for Baltimore, merging in column Fuel and Population
+# ==> select these SCCs from NEI for Baltimore and L.A., merging in column Fuel and Population
 #     (in SQL terms: INNER JOIN)
 
 setkey(NEI,SCC); setkey(SCCsel,SCC)                     # "ON clause" for join
@@ -424,26 +434,81 @@ BALA <- BALA[B99                                               # join in Emissio
 # setkey(BALA,fuel); setkey(tt,grp)                # "ON" clause for join
 # BALA <- BALA[tt][, `:=`(x=2003.5, y=maxEm+20)]   # join trends, coords for labels
 
-gp6 <- ggplot(BALA, aes(year,Emissions)) +
-       facet_grid(. ~ county, margins=FALSE) +
+facet_labelling <- function(variable, value) {
+    ifelse(value=="06037","Los Angeles",
+           ifelse(value=="24510","Baltimore City",
+                  label_value(variable,value)))
+}
+
+# prepare plots for total Emissions, relative, by area and by population
+
+g6a <- ggplot(BALA, aes(year,totEm)) +
+       facet_grid(fips ~ fuel, margins=FALSE, labeller="facet_labelling") +
        geom_bar(stat="identity", fill="red") +
        scale_x_continuous(breaks=BALA$year, labels=BALA$year) +
        geom_smooth(method = "lm", se=FALSE, size=2, colour="navy") +
-       geom_text(aes(x, y, label=trend), colour="navy") +
-       xlab(paste0("Year\n\n",
-                   "Emission from sources with SCC.Level.Two containing 'vehic' ",
-                   "and Data.Category == 'Onroad'")) +
        ylab("Emissions in tons") +
-       ggtitle(paste("Trends for PM2.5 Emissions for Motor Vehicles",
-                     "Baltimore City / MD, 1999 to 2008",
+       ggtitle(paste("comparing total emissions",
                      sep = "\n")) +
-       theme(strip.text.x = element_text(size=14, face="bold", colour="#5050AA"),
-             plot.title = element_text(lineheight=.9, face="bold", size=16))
-print(gp6)
+       theme(
+             strip.text.x = element_text(size=14, face="bold", colour="#5050AA"),
+             strip.text.y = element_text(size=11, face="bold", colour="Navy"),
+             plot.title = element_text(lineheight=.9, face="bold", size=13))
+
+g6b <- ggplot(BALA, aes(year,iTotEm)) +
+       facet_grid(fips ~ fuel, margins=FALSE, labeller="facet_labelling") +
+       geom_bar(stat="identity", fill="red") +
+       scale_x_continuous(breaks=BALA$year, labels=BALA$year) +
+       geom_smooth(method = "lm", se=FALSE, size=2, colour="navy") +
+       ylab("indexed: 1999 = 100%") +
+       ggtitle(paste("comparing total emissions in % of 1999",
+                     sep = "\n")) +
+       theme(
+             strip.text.x = element_text(size=14, face="bold", colour="#5050AA"),
+             strip.text.y = element_text(size=11, face="bold", colour="Navy"),
+             plot.title = element_text(lineheight=.9, face="bold", size=13))
+
+g6c <- ggplot(BALA, aes(year,areEm)) +
+       facet_grid(fips ~ fuel, margins=FALSE, labeller="facet_labelling") +
+       geom_bar(stat="identity", fill="red") +
+       scale_x_continuous(breaks=BALA$year, labels=BALA$year) +
+       geom_smooth(method = "lm", se=FALSE, size=2, colour="navy") +
+       ylab("Emissions in tons per square mile") +
+       ggtitle(paste("comparing emissions in tons per square mile of county area",
+                     sep = "\n")) +
+       theme(
+             strip.text.x = element_text(size=14, face="bold", colour="#5050AA"),
+             strip.text.y = element_text(size=11, face="bold", colour="Navy"),
+             plot.title = element_text(lineheight=.9, face="bold", size=13))
+
+g6d <- ggplot(BALA, aes(year,popEm)) +
+       facet_grid(fips ~ fuel, margins=FALSE, labeller="facet_labelling") +
+       geom_bar(stat="identity", fill="red") +
+       scale_x_continuous(breaks=BALA$year, labels=BALA$year) +
+       geom_smooth(method = "lm", se=FALSE, size=2, colour="navy") +
+       ylab("Emissions in lbs per capita") +
+       ggtitle(paste("comparing emissions in pounds (lbs) per capita",
+                     sep = "\n")) +
+       theme(
+             strip.text.x = element_text(size=14, face="bold", colour="#5050AA"),
+             strip.text.y = element_text(size=11, face="bold", colour="Navy"),
+             plot.title = element_text(lineheight=.9, face="bold", size=13))
+
+# put the four plots on one page using gridExtra
+# http://www.r-bloggers.com/extra-extra-get-your-gridextra/
+
+grid.arrange(g6a, g6b, g6c, g6d, ncol=2,
+             main = paste("Emissions from Motor Vehicle sources",
+                          "Los Angeles County vs Baltimore City",
+                          sep="\n"),
+             sub  = paste("Emission from sources with Data.Category == 'Onroad'",
+                          "or Short.Name contains 'recreat'",
+                          sep=" ")
+             )
 
 # copy the screen plot to png file
-noprint <- dev.copy(png, file = "plot6.png",
-                         width = 720, height = 480, units = "px")
+noprint <- dev.copy(png, file = "../plot6.png",
+                         width = 1020, height = 720, units = "px")
 noprint <- dev.off() ## Don't forget to close the PNG device!
 
 ```
